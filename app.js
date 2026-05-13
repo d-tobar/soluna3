@@ -1,9 +1,8 @@
-// 1. CONFIGURACIÓN DE SUPABASE
+// CONFIGURACIÓN DE SUPABASE
 const SUPABASE_URL = 'https://wymfzcomfmmuobmqtkzc.supabase.co'; 
 const SUPABASE_KEY = 'sb_publishable_fmsMMmMpRjw2uA7vEjblIQ_CQbjvc0O';
 const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-// Objeto global de datos
 let db = {
     cuentas: { efectivo: 0, banco: 0 },
     historial: [],
@@ -14,33 +13,22 @@ let db = {
 
 let ramoSeleccionado = null;
 
-// --- FUNCIONES DE SINCRONIZACIÓN ---
-
+// CARGA Y GUARDADO
 async function cargarDatos() {
     try {
         let { data, error } = await _supabase.from('datos_floreria').select('contenido').eq('id', 1).single();
-        if (data) {
-            db = data.contenido;
-            render();
-        } else {
-            await save(); 
-        }
-    } catch (e) {
-        console.error("Error cargando datos:", e);
-    }
+        if (data) { db = data.contenido; render(); } else { await save(); }
+    } catch (e) { console.error("Error cargando datos:", e); }
 }
 
 async function save() {
     try {
         await _supabase.from('datos_floreria').upsert({ id: 1, contenido: db });
         render();
-    } catch (e) {
-        console.error("Error al guardar:", e);
-    }
+    } catch (e) { console.error("Error al guardar:", e); }
 }
 
-// --- LÓGICA DEL SISTEMA ---
-
+// NAVEGACIÓN
 function openTab(name) {
     document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
     document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -48,6 +36,7 @@ function openTab(name) {
     if(event) event.currentTarget.classList.add('active');
 }
 
+// VENTA DE RAMOS (Lógica de Unidades)
 function seleccionarRamo(precio, el) {
     ramoSeleccionado = precio;
     document.querySelectorAll('.ramo-item').forEach(i => i.classList.remove('selected'));
@@ -57,20 +46,22 @@ function seleccionarRamo(precio, el) {
 }
 
 async function confirmarVenta() {
-    const efe = parseFloat(document.getElementById('cantEfectivo').value) || 0;
-    const ban = parseFloat(document.getElementById('cantBanco').value) || 0;
+    const unidadesEfe = parseInt(document.getElementById('cantEfectivo').value) || 0;
+    const unidadesBan = parseInt(document.getElementById('cantBanco').value) || 0;
     
-    if(efe > 0) {
-        db.cuentas.efectivo += (ramoSeleccionado * efe);
-        addHist('VENTA', `Ramo $${ramoSeleccionado} (x${efe})`, ramoSeleccionado * efe, 'efectivo');
-    }
-    if(ban > 0) {
-        db.cuentas.banco += (ramoSeleccionado * ban);
-        addHist('VENTA', `Ramo $${ramoSeleccionado} (x${ban})`, ramoSeleccionado * ban, 'banco');
-    }
+    if (unidadesEfe === 0 && unidadesBan === 0) return alert("Ingresa cuántas unidades vendiste");
+
+    const montoEfe = unidadesEfe * ramoSeleccionado;
+    const montoBan = unidadesBan * ramoSeleccionado;
+
+    db.cuentas.efectivo += montoEfe;
+    db.cuentas.banco += montoBan;
     
-    document.getElementById('cantEfectivo').value = 0;
-    document.getElementById('cantBanco').value = 0;
+    if (unidadesEfe > 0) addHist('VENTA', `Ramo $${ramoSeleccionado} (x${unidadesEfe})`, montoEfe, 'efectivo');
+    if (unidadesBan > 0) addHist('VENTA', `Ramo $${ramoSeleccionado} (x${unidadesBan})`, montoBan, 'banco');
+    
+    document.getElementById('cantEfectivo').value = "0";
+    document.getElementById('cantBanco').value = "0";
     cancelarVenta(); 
     await save();
 }
@@ -80,6 +71,7 @@ function cancelarVenta() {
     document.querySelectorAll('.ramo-item').forEach(i => i.classList.remove('selected'));
 }
 
+// VENTA DE EXTRAS
 async function venderInventario() {
     const p = document.getElementById('selectVenderInventario').value;
     const c = parseInt(document.getElementById('cantVenderOtro').value);
@@ -93,44 +85,52 @@ async function venderInventario() {
     db.cuentas[m] += $;
     addHist('VENTA', `Extra: ${p} (x${c})`, $, m);
     
-    document.getElementById('cantVenderOtro').value = 1;
+    document.getElementById('cantVenderOtro').value = "1";
     document.getElementById('precioVenderOtro').value = "";
     await save();
 }
 
+// SALIDAS (No negativos y Limpieza)
 async function registrarGasto(tipo) {
     let d = "", $ = 0, c = "efectivo", cat = "INVERSIÓN";
-    let nomInv = "", cantInv = 0;
-    
+    let input1, input2, input3;
+
     if(tipo === 'flor_general') {
-        const desc = document.getElementById('descGeneralFlores').value;
-        $ = parseFloat(document.getElementById('costoGeneralFlores').value);
+        input1 = document.getElementById('descGeneralFlores');
+        input2 = document.getElementById('costoGeneralFlores');
+        $ = parseFloat(input2.value);
         c = document.getElementById('cuentaGeneralFlores').value;
-        d = `Compra Lote: ${desc}`;
+        d = `Compra Lote: ${input1.value}`;
     } else if(tipo === 'flor_especifica') {
         const f = document.getElementById('selectFlores').value;
-        const n = document.getElementById('cantGastoFlor').value;
-        $ = parseFloat(document.getElementById('costoGastoFlor').value);
+        input1 = document.getElementById('cantGastoFlor');
+        input2 = document.getElementById('costoGastoFlor');
+        $ = parseFloat(input2.value);
         c = document.getElementById('cuentaGastoFlor').value;
-        d = `Compra: ${f} (${n})`;
+        d = `Compra: ${f} (${input1.value})`;
     } else if(tipo === 'nuevo_producto') {
-        nomInv = document.getElementById('nombreNuevoInv').value.trim();
-        cantInv = parseInt(document.getElementById('cantNuevoInv').value);
-        $ = parseFloat(document.getElementById('costoNuevoInv').value);
+        input1 = document.getElementById('nombreNuevoInv');
+        input2 = document.getElementById('cantNuevoInv');
+        input3 = document.getElementById('costoNuevoInv');
+        const nom = input1.value.trim();
+        const cant = parseInt(input2.value);
+        $ = parseFloat(input3.value);
         c = document.getElementById('cuentaNuevoInv').value;
-        d = `Stock: ${nomInv} (+${cantInv})`;
+        d = `Stock: ${nom} (+${cant})`;
+        if($ > 0) db.inventario[nom] = (db.inventario[nom] || 0) + cant;
     } else if(tipo === 'gasto_vario') {
-        const desc = document.getElementById('descVario').value;
-        $ = parseFloat(document.getElementById('costoVario').value);
+        input1 = document.getElementById('descVario');
+        input2 = document.getElementById('costoVario');
+        $ = parseFloat(input2.value);
         c = document.getElementById('cuentaVario').value;
-        d = "Pago: " + desc;
+        d = "Pago: " + input1.value;
         cat = "GASTO";
     }
     
     if($ > 0) {
-        db.cuentas[c] -= $;
-        if(tipo === 'nuevo_producto') db.inventario[nomInv] = (db.inventario[nomInv] || 0) + cantInv;
+        db.cuentas[c] = Math.max(0, db.cuentas[c] - $); // Regla de no negativos
         addHist(cat, d, $, c); 
+        if(input1) input1.value = ""; if(input2) input2.value = ""; if(input3) input3.value = "";
         await save(); 
         alert("Registrado");
     }
@@ -139,25 +139,26 @@ async function registrarGasto(tipo) {
 async function realizarTransferencia() {
     const o = document.getElementById('transfOrigen').value;
     const d = document.getElementById('transfDestino').value;
-    const $ = parseFloat(document.getElementById('montoTransf').value);
+    const input = document.getElementById('montoTransf');
+    const $ = parseFloat(input.value);
     if(isNaN($) || $ <= 0 || o === d) return;
     
-    db.cuentas[o] -= $;
-    db.cuentas[d] += $;
-    addHist('MOVIMIENTO', `De ${o} a ${d}`, $, o);
-    document.getElementById('montoTransf').value = "";
+    const real = Math.min(db.cuentas[o], $);
+    db.cuentas[o] = Math.max(0, db.cuentas[o] - real);
+    db.cuentas[d] += real;
+    
+    addHist('MOVIMIENTO', `De ${o} a ${d}`, real, o);
+    input.value = "";
     await save();
 }
 
+// RENDER Y UTILIDADES
 function addHist(tipo, desc, monto, cuenta) {
     db.historial.unshift({ t: Date.now(), f: new Date().toLocaleString(), tipo, desc, monto, cuenta });
 }
 
 function render() {
-    // Ramos
     document.getElementById('gridRamos').innerHTML = db.ramosPrecios.map(p => `<div class="ramo-item" onclick="seleccionarRamo(${p}, this)">$${p}</div>`).join('');
-    
-    // Selects
     document.getElementById('selectFlores').innerHTML = db.tiposFlores.map(f => `<option value="${f}">${f}</option>`).join('');
     
     const listInv = document.getElementById('listaInventario');
@@ -168,7 +169,6 @@ function render() {
         listInv.innerHTML += `<tr><td>${k}</td><td>${db.inventario[k]}</td><td><button onclick="eliminarItem('${k}')">X</button></td></tr>`;
     }
 
-    // Balances
     const filtro = document.getElementById('filtroTiempo').value;
     const ahora = Date.now();
     let limite = 0;
@@ -192,14 +192,13 @@ function render() {
     document.getElementById('gasPeriodo').innerText = `$${gP.toFixed(2)}`;
     document.getElementById('resultadoDia').innerText = `Neto: $${(vP - iP - gP).toFixed(2)}`;
 
-    document.getElementById('listaHistorial').innerHTML = filtered.map(h => `
+    document.getElementById('listaHistorial').innerHTML = filtered.slice(0, 15).map(h => `
         <tr><td>${h.f.split(',')[0]}</td><td>${h.tipo}</td><td>${h.desc}</td><td>$${h.monto}</td><td>${h.cuenta}</td></tr>
     `).join('');
 }
 
 async function eliminarItem(key) {
-    delete db.inventario[key];
-    await save();
+    if(confirm("¿Eliminar producto?")) { delete db.inventario[key]; await save(); }
 }
 
 async function resetearSistema() {
