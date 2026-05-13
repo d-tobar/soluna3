@@ -8,9 +8,8 @@ let db = {
     cuentas: { efectivo: 0, banco: 0 },
     historial: [],
     ramosPrecios: [3, 5, 10, 12, 15, 20, 25, 30],
-    tiposFlores: ["Rosas", "Girasoles", "Lirios"],
     inventario: {},
-    totales: { ventas: 0, gastos: 0 } // Agregado para el apartado de ventas y gastos
+    totales: { ventas: 0, gastos: 0 }
 };
 
 let ramoSeleccionado = null;
@@ -21,13 +20,12 @@ async function cargarDatos() {
         let { data, error } = await _supabase.from('datos_floreria').select('contenido').eq('id', 1).single();
         if (data) {
             db = data.contenido;
-            // Asegurar que existan los campos de totales si no estaban
-            if(!db.totales) db.totales = { ventas: 0, gastos: 0 }; 
+            if(!db.totales) db.totales = { ventas: 0, gastos: 0 };
             render();
         } else {
             await save(); 
         }
-    } catch (e) { console.error("Error:", e); }
+    } catch (e) { console.error("Error al cargar:", e); }
 }
 
 async function save() {
@@ -37,81 +35,96 @@ async function save() {
     } catch (e) { console.error("Error al guardar:", e.message); }
 }
 
-// --- SOLUCIÓN ERROR 1: VENTAS ---
-async function confirmarVenta() {
+// --- NAVEGACIÓN (Corrige error openTab de image_dad3bb.png) ---
+window.openTab = function(name) {
+    document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    
+    const target = document.getElementById(name);
+    if(target) target.classList.add('active');
+    if(event) event.currentTarget.classList.add('active');
+};
+
+// --- VENTAS (Corrige error seleccionarRamo de image_dad3bb.png) ---
+window.seleccionarRamo = function(precio, el) {
+    ramoSeleccionado = precio;
+    document.querySelectorAll('.ramo-item').forEach(i => i.classList.remove('selected'));
+    if(el) el.classList.add('selected');
+    
+    const modal = document.getElementById('confirmacionVenta');
+    if(modal) {
+        modal.style.display = 'flex';
+        document.getElementById('tituloRamoSeleccionado').innerText = `Ramo de $${precio}`;
+    }
+};
+
+window.confirmarVenta = async function() {
     const efe = parseFloat(document.getElementById('cantEfectivo').value) || 0;
     const ban = parseFloat(document.getElementById('cantBanco').value) || 0;
     
-    // Validación corregida: debe sumar el precio total del ramo
+    // CORRECCIÓN: Validación por precio total del ramo
     if (Math.abs((efe + ban) - ramoSeleccionado) > 0.01) {
-        alert(`La suma total de efectivo y banco debe ser $${ramoSeleccionado}`);
+        alert(`La suma debe ser exactamente $${ramoSeleccionado}`);
         return;
     }
 
     db.cuentas.efectivo += efe;
     db.cuentas.banco += ban;
-    db.totales.ventas += ramoSeleccionado; // Ahora sí se refleja en el apartado de ventas
+    db.totales.ventas += ramoSeleccionado; // Se refleja en apartado ventas
     
     addHist('VENTA', `Ramo $${ramoSeleccionado}`, ramoSeleccionado, efe > 0 && ban > 0 ? 'mixto' : (efe > 0 ? 'efectivo' : 'banco'));
     
     document.getElementById('cantEfectivo').value = 0;
     document.getElementById('cantBanco').value = 0;
-    cancelarVenta(); 
+    window.cancelarVenta(); 
     await save();
-}
+};
 
-// --- SOLUCIÓN ERROR 2: VENDER EXTRA (INVENTARIO) ---
-function actualizarSelectsInventario() {
-    const selects = ['selectInvExtra', 'nombreNuevoInv']; // IDs de tus selects en HTML
-    selects.forEach(id => {
-        const el = document.getElementById(id);
-        if(el) {
-            el.innerHTML = '<option value="">Seleccionar...</option>';
-            for(let item in db.inventario) {
-                el.innerHTML += `<option value="${item}">${item} (${db.inventario[item]})</option>`;
-            }
-        }
-    });
-}
+window.cancelarVenta = function() {
+    const modal = document.getElementById('confirmacionVenta');
+    if(modal) modal.style.display = 'none';
+    document.querySelectorAll('.ramo-item').forEach(i => i.classList.remove('selected'));
+};
 
-// --- SOLUCIÓN ERROR 3 Y 4: SALIDAS E INVERSIÓN ---
-async function registrarGasto(tipo) {
-    let desc = "", monto = 0, cuenta = "efectivo", categoria = "GASTO";
+// --- INVENTARIO Y GASTOS ---
+window.registrarGasto = async function(tipo) {
+    let desc = "", monto = 0, cuenta = "efectivo", cat = "GASTO";
     
     if(tipo === 'nuevo_stock') {
-        const nombre = document.getElementById('nombreStock').value; // Asegúrate que el ID coincida en tu HTML
+        const nombre = document.getElementById('nombreStock').value; 
         const cantidad = parseInt(document.getElementById('cantidadStock').value);
         monto = parseFloat(document.getElementById('costoStock').value);
         cuenta = document.getElementById('cuentaStock').value;
         
+        if(!nombre || isNaN(cantidad) || isNaN(monto)) return;
+
         db.inventario[nombre] = (db.inventario[nombre] || 0) + cantidad;
-        desc = `Compra: ${nombre} (+${cantidad})`;
-        categoria = "INVERSIÓN";
+        desc = `Stock: ${nombre} (+${cantidad})`;
+        cat = "INVERSIÓN";
     }
 
     if(monto > 0) {
         db.cuentas[cuenta] -= monto;
-        db.totales.gastos += monto; // Reflejo en el apartado de gastos
-        addHist(categoria, desc, monto, cuenta);
+        db.totales.gastos += monto; // CORRECCIÓN: Ahora se refleja en apartado gastos
+        addHist(cat, desc, monto, cuenta);
         await save();
+        alert("Registro exitoso");
     }
+};
+
+function addHist(tipo, desc, monto, cuenta) {
+    db.historial.unshift({ t: Date.now(), f: new Date().toLocaleString(), tipo, desc, monto, cuenta });
 }
 
-// --- SOLUCIÓN ERROR 5: REFLEJO EN APARTADO VENTAS/GASTOS ---
 function render() {
-    // Actualizar apartado de Totales (Ventas y Gastos)
-    if(document.getElementById('montoVentas')) {
-        document.getElementById('montoVentas').innerText = `$${db.totales.ventas.toFixed(2)}`;
-    }
-    if(document.getElementById('montoGastos')) {
-        document.getElementById('montoGastos').innerText = `$${db.totales.gastos.toFixed(2)}`;
-    }
-
-    // Actualizar Balances Principales
+    // Totales de Balance y Reportes
+    if(document.getElementById('montoVentas')) document.getElementById('montoVentas').innerText = `$${db.totales.ventas.toFixed(2)}`;
+    if(document.getElementById('montoGastos')) document.getElementById('montoGastos').innerText = `$${db.totales.gastos.toFixed(2)}`;
+    
     document.getElementById('balEfectivo').innerText = `$${db.cuentas.efectivo.toFixed(2)}`;
     document.getElementById('balBanco').innerText = `$${db.cuentas.banco.toFixed(2)}`;
 
-    // Renderizar botones de ramos
+    // Botones de ramos
     const grid = document.getElementById('gridRamos');
     if(grid) {
         grid.innerHTML = db.ramosPrecios.map(p => 
@@ -119,12 +132,14 @@ function render() {
         ).join('');
     }
 
-    actualizarSelectsInventario(); // Actualiza los menús desplegables del inventario
-    // ... (resto de tus funciones de renderizado de historial)
-}
-
-function addHist(tipo, desc, monto, cuenta) {
-    db.historial.unshift({ t: Date.now(), f: new Date().toLocaleString(), tipo, desc, monto, cuenta });
+    // Actualizar select de Inventario para "Vender Extra"
+    const selectExtra = document.getElementById('selectInvExtra');
+    if(selectExtra) {
+        selectExtra.innerHTML = '<option value="">Seleccionar producto...</option>';
+        for(let item in db.inventario) {
+            selectExtra.innerHTML += `<option value="${item}">${item} (${db.inventario[item]})</option>`;
+        }
+    }
 }
 
 cargarDatos();
