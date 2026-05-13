@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Soluna - Control de Floristería</title>
     <link rel="stylesheet" href="style.css">
-    <!-- Carga de Supabase primero -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
@@ -23,92 +22,78 @@
     </nav>
 
     <div class="container">
-        <!-- PESTAÑA VENTAS RAMOS -->
+        <!-- SECCIÓN VENTAS -->
         <div id="ventas" class="tab-content active">
             <div class="card">
                 <h2>Vender Ramos</h2>
                 <div id="gridRamos" class="grid-ramos"></div>
-                
                 <div id="confirmacionVenta" class="confirm-box" style="display: none; flex-direction: column; gap: 10px;">
                     <h3 id="tituloRamoSeleccionado">Ramo de $0</h3>
-                    <div style="display: flex; gap: 15px; flex-wrap: wrap; align-items: flex-end;">
-                        <div>
-                            <label>Efectivo:</label><br>
-                            <input type="number" id="cantEfectivo" value="0" style="width: 80px;">
-                        </div>
-                        <div>
-                            <label>Banco:</label><br>
-                            <input type="number" id="cantBanco" value="0" style="width: 80px;">
-                        </div>
-                        <button class="btn-main" onclick="window.confirmarVenta()">Registrar</button>
-                        <button class="btn-small" style="background:#95a5a6" onclick="window.cancelarVenta()">Cancelar</button>
+                    <div style="display: flex; gap: 10px;">
+                        <input type="number" id="cantEfectivo" placeholder="Efe $" value="0" style="width: 70px;">
+                        <input type="number" id="cantBanco" placeholder="Ban $" value="0" style="width: 70px;">
+                        <button class="btn-main" onclick="window.confirmarVenta()">OK</button>
+                        <button onclick="window.cancelarVenta()">X</button>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- PESTAÑA OTROS (EXTRAS) -->
-        <div id="otros" class="tab-content">
-            <div class="card">
-                <h2>Venta de Artículos Extras</h2>
-                <div class="confirm-box">
-                    <label>Producto:</label>
-                    <select id="selectVenderInventario" style="width: 100%;"></select>
-                    <div style="display: flex; gap: 10px; margin-top: 10px;">
-                        <input type="number" id="cantVenderOtro" placeholder="Cant" value="1" style="width: 30%;">
-                        <input type="number" id="precioVenderOtro" placeholder="Precio Total $" style="width: 70%;">
-                    </div>
-                    <select id="metodoOtro" style="width: 100%; margin-top:10px;">
-                        <option value="efectivo">Efectivo</option>
-                        <option value="banco">Banco</option>
-                    </select>
-                    <button class="btn-main" style="width: 100%; margin-top:10px;" onclick="window.venderInventario()">Registrar Venta</button>
-                </div>
-            </div>
-        </div>
-
-        <!-- PESTAÑA SALIDAS -->
+        <!-- SECCIÓN SALIDAS (Donde fallaban los botones en image_da5fbe.png) -->
         <div id="gastos" class="tab-content">
             <div class="card">
                 <h2>Registrar Salida de Dinero</h2>
-                <div class="gasto-box" style="border-left: 5px solid #f39c12; padding: 10px; margin-bottom: 10px;">
-                    <h3>Nueva Inversión / Gasto</h3>
-                    <input type="text" id="descGasto" placeholder="Descripción (Ej: Tazas o Flores)">
+                
+                <div class="gasto-box" style="border-left: 4px solid #f39c12; padding: 10px; margin-bottom: 10px;">
+                    <h3>Inversión: Flores o Mercancía</h3>
+                    <input type="text" id="descInversion" placeholder="¿Qué compraste?">
+                    <input type="number" id="montoInversion" placeholder="Monto $">
+                    <select id="cuentaInversion">
+                        <option value="efectivo">Efectivo</option>
+                        <option value="banco">Banco</option>
+                    </select>
+                    <button class="btn-main" onclick="window.registrarSalida('INVERSIÓN')">Registrar Compra</button>
+                </div>
+
+                <div class="gasto-box" style="border-left: 4px solid #e74c3c; padding: 10px;">
+                    <h3>Gasto Operativo (Luz, Alquiler, etc.)</h3>
+                    <input type="text" id="descGasto" placeholder="Descripción del gasto">
                     <input type="number" id="montoGasto" placeholder="Monto $">
                     <select id="cuentaGasto">
                         <option value="efectivo">Efectivo</option>
                         <option value="banco">Banco</option>
                     </select>
-                    <button class="btn-main" onclick="window.registrarGastoRapido()">Registrar Salida</button>
+                    <button class="btn-main" style="background:#e74c3c" onclick="window.registrarSalida('GASTO')">Registrar Gasto</button>
                 </div>
             </div>
         </div>
 
-        <!-- PESTAÑA INVENTARIO -->
-        <div id="inventario" class="tab-content">
-            <div class="card">
-                <h2>Existencias</h2>
-                <table>
-                    <thead><tr><th>Producto</th><th>Stock</th><th>Acción</th></tr></thead>
-                    <tbody id="listaInventario"></tbody>
-                </table>
-            </div>
-        </div>
-
-        <!-- PESTAÑA BALANCE -->
+        <!-- SECCIÓN BALANCE -->
         <div id="balance" class="tab-content">
             <div class="card">
-                <div class="balance-grid">
-                    <div class="bal-item">Efectivo: <b id="balEfectivo">$0</b></div>
-                    <div class="bal-item">Banco: <b id="balBanco">$0</b></div>
-                </div>
+                <h3>Balance Actual</h3>
+                <p>Efectivo: <b id="balEfectivo">$0</b></p>
+                <p>Banco: <b id="balBanco">$0</b></p>
                 <hr>
-                <div id="listaHistorial" style="font-size: 0.9em; max-height: 300px; overflow-y: auto;"></div>
+                <h4>Movimientos</h4>
+                <div id="listaHistorial" style="font-size: 0.8em; max-height: 200px; overflow-y: auto;"></div>
             </div>
+        </div>
+        
+        <!-- SECCIÓN INVENTARIO -->
+        <div id="inventario" class="tab-content">
+            <div class="card">
+                <h2>Inventario</h2>
+                <div id="listaInventario"></div>
+            </div>
+        </div>
+
+        <div id="otros" class="tab-content">
+             <div class="card"><h2>Extras</h2><p>Próximamente...</p></div>
         </div>
     </div>
 
-    <!-- El script al final es CLAVE -->
+    <!-- Script al final para que el HTML cargue primero -->
     <script src="app.js"></script>
 </body>
 </html>
