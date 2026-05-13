@@ -3,120 +3,201 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Soluna - Gestión de Floristería</title>
+    <title>Soluna - Control de Floristería</title>
     <link rel="stylesheet" href="style.css">
+    <!-- SDK de Supabase -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
+
     <header class="top-bar">
-        <div class="brand">SOLUNA</div>
+        <div class="brand">Soluna</div>
     </header>
 
     <nav class="tabs">
-        <button class="tab-btn active" onclick="window.openTab('ventas')">Vender Ramos</button>
-        <button class="tab-btn" onclick="window.openTab('otros')">Vender Extras</button>
-        <button class="tab-btn" onclick="window.openTab('gastos')">Salidas (Dinero)</button>
-        <button class="tab-btn" onclick="window.openTab('inventario')">Inventario</button>
-        <button class="tab-btn" onclick="window.openTab('balance')">Balance y Reportes</button>
+        <button class="tab-btn active" onclick="openTab('ventas')">Vender Ramos</button>
+        <button class="tab-btn" onclick="openTab('otros')">Vender Extras</button>
+        <button class="tab-btn" onclick="openTab('gastos')">Salidas (Dinero)</button>
+        <button class="tab-btn" onclick="openTab('inventario')">Inventario</button>
+        <button class="tab-btn" onclick="openTab('balance')">Balance y Reportes</button>
     </nav>
 
     <div class="container">
-        <!-- VENTA DE RAMOS -->
+        
+        <!-- PESTAÑA VENTAS RAMOS -->
         <div id="ventas" class="tab-content active">
             <div class="card">
                 <h2>Vender Ramos</h2>
                 <div id="gridRamos" class="grid-ramos"></div>
-                <div id="confirmacionVenta" class="confirm-box" style="display: none;">
-                    <h3 id="tituloRamoSeleccionado">Ramo</h3>
-                    <input type="number" id="cantEfectivo" placeholder="Efectivo $">
-                    <input type="number" id="cantBanco" placeholder="Banco $">
-                    <button class="btn-main" onclick="window.confirmarVenta()">Confirmar</button>
-                    <button onclick="window.cancelarVenta()">Cancelar</button>
+                
+                <div id="confirmacionVenta" class="confirm-box" style="display: none; flex-direction: column; gap: 10px;">
+                    <h3 id="tituloRamoSeleccionado">Ramo de $0</h3>
+                    <div style="display: flex; gap: 15px; flex-wrap: wrap; align-items: flex-end;">
+                        <div>
+                            <label>Cant. Efectivo:</label><br>
+                            <input type="number" id="cantEfectivo" value="0" min="0" style="width: 80px;">
+                        </div>
+                        <div>
+                            <label>Cant. Banco:</label><br>
+                            <input type="number" id="cantBanco" value="0" min="0" style="width: 80px;">
+                        </div>
+                        <button class="btn-main" onclick="confirmarVenta()">Registrar</button>
+                        <button class="btn-small" style="background:#95a5a6" onclick="cancelarVenta()">Cancelar</button>
+                    </div>
                 </div>
             </div>
         </div>
 
-        <!-- SALIDAS Y GASTOS (LÓGICA COMPLETA) -->
+        <!-- PESTAÑA OTROS PRODUCTOS -->
+        <div id="otros" class="tab-content">
+            <div class="card">
+                <h2>Venta de Artículos Extras</h2>
+                <div class="confirm-box">
+                    <label>Producto:</label>
+                    <select id="selectVenderInventario" style="width: 100%;"></select>
+                    <div style="display: flex; gap: 10px; margin-top: 10px;">
+                        <input type="number" id="cantVenderOtro" placeholder="Cant" value="1" style="width: 30%;">
+                        <input type="number" id="precioVenderOtro" placeholder="Precio Total $" style="width: 70%;">
+                    </div>
+                    <select id="metodoOtro" style="width: 100%;">
+                        <option value="efectivo">Efectivo</option>
+                        <option value="banco">Banco</option>
+                    </select>
+                    <button class="btn-main" style="width: 100%;" onclick="venderInventario()">Registrar Venta de Extra</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- PESTAÑA SALIDAS (GASTOS E INVERSIÓN) -->
         <div id="gastos" class="tab-content">
             <div class="card">
-                <h2>Registrar Salida</h2>
-                
-                <div class="gasto-section">
-                    <h3>Inversión: Flores en Lote</h3>
-                    <input type="text" id="descGeneralFlores" placeholder="Descripción lote">
-                    <input type="number" id="costoGeneralFlores" placeholder="Costo Total $">
-                    <select id="cuentaGeneralFlores"><option value="efectivo">Efectivo</option><option value="banco">Banco</option></select>
-                    <button onclick="window.registrarGasto('flor_general')">Registrar Lote</button>
-                </div>
+                <h2>Registrar Salida de Dinero</h2>
 
-                <div class="gasto-section">
-                    <h3>Inversión: Flor Específica</h3>
-                    <div style="display:flex; gap:5px;">
-                        <select id="selectFlores" style="flex:1;"></select>
-                        <button onclick="window.nuevoTipoFlor()">+ Nueva</button>
+                <!-- 1. COMPRA DE FLORES EN LOTE -->
+                <div class="gasto-box" style="border-left: 4px solid #f39c12; padding: 10px; margin-bottom: 10px;">
+                    <h3>Inversión: Flores en Lote / Cantidades</h3>
+                    <div class="confirm-box">
+                        <input type="text" id="descGeneralFlores" placeholder="Ej: 10 paquetes variados, follaje">
+                        <input type="number" id="costoGeneralFlores" placeholder="Costo Total $">
+                        <select id="cuentaGeneralFlores">
+                            <option value="efectivo">Efectivo</option>
+                            <option value="banco">Banco</option>
+                        </select>
+                        <button class="btn-main" onclick="registrarGasto('flor_general')">Registrar Compra General</button>
                     </div>
-                    <input type="text" id="cantGastoFlor" placeholder="Cant. (Ej: 2 docenas)">
-                    <input type="number" id="costoGastoFlor" placeholder="Costo $">
-                    <select id="cuentaGastoFlor"><option value="efectivo">Efectivo</option><option value="banco">Banco</option></select>
-                    <button onclick="window.registrarGasto('flor_especifica')">Registrar Flor</button>
                 </div>
 
-                <div class="gasto-section">
+                <!-- 2. COMPRA DE FLOR ESPECÍFICA -->
+                <div class="gasto-box" style="border-left: 4px solid #f39c12; padding: 10px; margin-bottom: 10px;">
+                    <h3>Inversión: Flor Específica</h3>
+                    <div class="confirm-box">
+                        <div style="display: flex; gap: 5px; margin-bottom: 5px;">
+                            <select id="selectFlores" style="flex: 1;"></select>
+                            <button class="btn-small" onclick="nuevoTipoFlor()">+ Nueva</button>
+                        </div>
+                        <input type="text" id="cantGastoFlor" placeholder="Cant. (Ej: 2 docenas)">
+                        <input type="number" id="costoGastoFlor" placeholder="Costo Total $">
+                        <select id="cuentaGastoFlor">
+                            <option value="efectivo">Efectivo</option>
+                            <option value="banco">Banco</option>
+                        </select>
+                        <button class="btn-main" onclick="registrarGasto('flor_especifica')">Registrar Compra Específica</button>
+                    </div>
+                </div>
+
+                <!-- 3. COMPRA DE INVENTARIO -->
+                <div class="gasto-box" style="border-left: 4px solid #f39c12; padding: 10px; margin-bottom: 10px;">
                     <h3>Inversión: Nuevo Stock (Tazas, Globos)</h3>
-                    <input type="text" id="nombreNuevoInv" placeholder="Nombre producto">
-                    <input type="number" id="cantNuevoInv" placeholder="Cantidad">
-                    <input type="number" id="costoNuevoInv" placeholder="Costo total $">
-                    <select id="cuentaNuevoInv"><option value="efectivo">Efectivo</option><option value="banco">Banco</option></select>
-                    <button onclick="window.registrarGasto('nuevo_producto')">Registrar Stock</button>
+                    <div class="confirm-box">
+                        <input type="text" id="nombreNuevoInv" placeholder="Nombre (Ej: Taza Rosa)">
+                        <input type="number" id="cantNuevoInv" placeholder="Unidades que entran">
+                        <input type="number" id="costoNuevoInv" placeholder="Costo Total Pagado $">
+                        <select id="cuentaNuevoInv">
+                            <option value="efectivo">Efectivo</option>
+                            <option value="banco">Banco</option>
+                        </select>
+                        <button class="btn-main" onclick="registrarGasto('nuevo_producto')">Agregar al Inventario</button>
+                    </div>
                 </div>
 
-                <div class="gasto-section">
-                    <h3>Gasto Vario</h3>
-                    <input type="text" id="descVario" placeholder="Luz, local, comida...">
-                    <input type="number" id="costoVario" placeholder="Costo $">
-                    <select id="cuentaVario"><option value="efectivo">Efectivo</option><option value="banco">Banco</option></select>
-                    <button onclick="window.registrarGasto('gasto_vario')">Registrar Gasto</button>
+                <!-- 4. GASTOS OPERATIVOS -->
+                <div class="gasto-box" style="border-left: 4px solid #e74c3c; padding: 10px;">
+                    <h3>Gasto Operativo: Salarios y Servicios</h3>
+                    <div class="confirm-box">
+                        <input type="text" id="descVario" placeholder="Ej: Salario Semanal, Pago de Luz">
+                        <input type="number" id="costoVario" placeholder="Monto $">
+                        <select id="cuentaVario">
+                            <option value="efectivo">Efectivo</option>
+                            <option value="banco">Banco</option>
+                        </select>
+                        <button class="btn-main" style="background:#e74c3c" onclick="registrarGasto('gasto_vario')">Registrar Gasto</button>
+                    </div>
                 </div>
             </div>
         </div>
 
-        <!-- INVENTARIO -->
+        <!-- PESTAÑA INVENTARIO -->
         <div id="inventario" class="tab-content">
             <div class="card">
-                <h2>Inventario de Extras</h2>
+                <h2>Existencias de Artículos Extras</h2>
                 <table>
-                    <thead><tr><th>Producto</th><th>Stock</th><th>Acción</th></tr></thead>
+                    <thead>
+                        <tr><th>Producto</th><th>Stock</th><th>Acciones</th></tr>
+                    </thead>
                     <tbody id="listaInventario"></tbody>
                 </table>
             </div>
         </div>
 
-        <!-- VENDER EXTRAS -->
-        <div id="otros" class="tab-content">
-            <div class="card">
-                <h2>Venta de Extras</h2>
-                <select id="selectVenderInventario"></select>
-                <input type="number" id="cantVenderOtro" placeholder="Cantidad">
-                <input type="number" id="precioVenderOtro" placeholder="Precio Venta $">
-                <select id="metodoOtro"><option value="efectivo">Efectivo</option><option value="banco">Banco</option></select>
-                <button class="btn-main" onclick="window.venderInventario()">Confirmar Venta</button>
-            </div>
-        </div>
-
-        <!-- BALANCE -->
+        <!-- PESTAÑA BALANCE -->
         <div id="balance" class="tab-content">
-            <div class="card">
-                <select id="filtroTiempo" onchange="window.render()"><option value="hoy">Hoy</option><option value="todo">Todo el tiempo</option></select>
-                <div class="bal-resumen">
-                    <div>Ventas: <b id="venPeriodo">$0</b></div>
-                    <div>Inversión: <b id="invPeriodo">$0</b></div>
-                    <div>Gastos: <b id="gasPeriodo">$0</b></div>
-                </div>
-                <h3>Caja Actual</h3>
-                <p>Efe: <b id="balEfectivo">$0</b> | Ban: <b id="balBanco">$0</b></p>
-                <button style="background:red; color:white" onclick="window.resetearSistema()">RESET TOTAL</button>
-                <div id="listaHistorial"></div>
+            <div class="card" style="background: #3498db; color: white; padding: 15px; border-radius: 8px;">
+                <h3>Filtrar Reporte</h3>
+                <select id="filtroTiempo" onchange="render()" style="width: 100%; padding: 8px; border-radius: 5px;">
+                    <option value="hoy">Hoy</option>
+                    <option value="semana">Últimos 7 días</option>
+                    <option value="mes">Este Mes</option>
+                    <option value="todo">Historial Completo</option>
+                </select>
             </div>
+
+            <div class="card">
+                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; text-align: center; margin-bottom: 15px;">
+                    <div>Efectivo: <b id="balEfectivo">$0</b></div>
+                    <div>Banco: <b id="balBanco">$0</b></div>
+                    <div>Caja Total: <b id="balTotal">$0</b></div>
+                </div>
+                <hr>
+                <div style="display: flex; justify-content: space-between; text-align: center; margin-top: 10px;">
+                    <div>Ventas<br><span id="venPeriodo" style="color:#2ecc71; font-weight:bold;">$0</span></div>
+                    <div>Inversión<br><span id="invPeriodo" style="color:#f39c12; font-weight:bold;">$0</span></div>
+                    <div>Gastos<br><span id="gasPeriodo" style="color:#e74c3c; font-weight:bold;">$0</span></div>
+                </div>
+                <h3 id="resultadoDia" style="text-align: center; margin-top: 15px; border-top: 1px solid #eee; padding-top: 10px;">Neto: $0</h3>
+            </div>
+
+            <div class="card" style="border-top: 4px solid #2ecc71;">
+                <h3>Corregir Saldos (Mover dinero)</h3>
+                <div class="confirm-box" style="display: flex; gap: 5px; align-items: center; flex-wrap: wrap;">
+                    Pasar de 
+                    <select id="transfOrigen"><option value="efectivo">Efectivo</option><option value="banco">Banco</option></select>
+                    a 
+                    <select id="transfDestino"><option value="banco">Banco</option><option value="efectivo">Efectivo</option></select>
+                    Monto: $ <input type="number" id="montoTransf" style="width: 80px;">
+                    <button class="btn-main" onclick="realizarTransferencia()">Mover</button>
+                </div>
+            </div>
+
+            <div class="card">
+                <h2>Movimientos Recientes</h2>
+                <div style="overflow-x: auto;">
+                    <table style="width: 100%; font-size: 0.9em;">
+                        <thead><tr><th>Fecha</th><th>Tipo</th><th>Descripción</th><th>Monto</th><th>Cuenta</th></tr></thead>
+                        <tbody id="listaHistorial"></tbody>
+                    </table>
+                </div>
+            </div>
+            <button onclick="resetearSistema()" style="background:#ff4757; color:white; border:none; padding:10px; border-radius:5px; cursor:pointer; width: 100%; margin-top: 10px;">Borrar TODO (Cuidado)</button>
         </div>
     </div>
 
