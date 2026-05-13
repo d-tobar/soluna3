@@ -1,0 +1,57 @@
+:root {
+    --primary: #d4a5a5;
+    --secondary: #9eb384;
+    --accent: #f4f2de;
+    --dark: #435334;
+    --white: #ffffff;
+}
+
+body { font-family: 'Segoe UI', sans-serif; background-color: #faf9f6; color: var(--dark); margin: 0; }
+nav.tabs { background: var(--white); display: flex; justify-content: center; gap: 5px; padding: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); position: sticky; top: 0; z-index: 100; flex-wrap: wrap; }
+.tab-btn { border: none; background: none; padding: 10px; font-weight: 600; color: #888; cursor: pointer; border-radius: 15px; font-size: 0.9em; }
+.tab-btn.active { background: var(--primary); color: white; }
+.container { width: 95%; max-width: 850px; margin: 15px auto; }
+.tab-content { display: none; animation: fadeIn 0.3s; }
+.tab-content.active { display: block; }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+.card { background: var(--white); padding: 15px; border-radius: 12px; box-shadow: 0 3px 10px rgba(0,0,0,0.05); margin-bottom: 15px; }
+.grid-ramos { display: grid; grid-template-columns: repeat(auto-fill, minmax(70px, 1fr)); gap: 8px; margin-bottom: 15px; }
+.ramo-item { padding: 12px; border: 2px solid var(--accent); border-radius: 8px; text-align: center; cursor: pointer; font-weight: bold; }
+.ramo-item.selected { background: var(--primary); color: white; border-color: var(--primary); }
+.confirm-box { background: var(--accent); padding: 12px; border-radius: 8px; margin-top: 5px; }
+input, select { padding: 8px; border: 1px solid #ddd; border-radius: 5px; margin: 4px 0; }
+.btn-main { background: var(--secondary); color: white; border: none; padding: 10px; border-radius: 6px; cursor: pointer; font-weight: bold; }
+.gasto-box { padding: 10px; margin-bottom: 10px; border-left: 4px solid; border-radius: 4px; background: #fff; }
+.balance-grid { display: flex; justify-content: space-between; gap: 8px; margin-bottom: 10px; }
+.bal-item { background: var(--accent); padding: 10px; border-radius: 8px; flex: 1; text-align: center; font-size: 0.9em; }
+table { width: 100%; border-collapse: collapse; font-size: 0.85em; }
+th { background: #eee; padding: 8px; text-align: left; }
+td { padding: 8px; border-bottom: 1px solid #f0f0f0; }
+.tipo-VENTA { color: #2ecc71; font-weight: bold; }
+.tipo-INVERSIÓN { color: #f39c12; font-weight: bold; }
+.tipo-GASTO { color: #e74c3c; font-weight: bold; }
+.tipo-MOVIMIENTO { color: #3498db; font-weight: bold; }
+
+/* Estilos para el nombre de la marca */
+.top-bar {
+    background: var(--white);
+    padding: 10px 20px;
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+    border-bottom: 1px solid var(--accent);
+}
+
+.brand {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: var(--primary); /* Color rosado de tu paleta */
+    text-transform: uppercase;
+    letter-spacing: 2px;
+}
+
+/* Ajuste opcional para que el nav no se vea pegado */
+nav.tabs {
+    border-top: none; 
+    padding-top: 5px;
+}
