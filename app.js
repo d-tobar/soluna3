@@ -1,4 +1,3 @@
-// 1. CONFIGURACIÓN
 const SUPABASE_URL = 'https://wymfzcomfmmuobmqtkzc.supabase.co'; 
 const SUPABASE_KEY = 'sb_publishable_fmsMMmMpRjw2uA7vEjblIQ_CQbjvc0O';
 const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -12,7 +11,7 @@ let db = {
 
 let ramoSeleccionado = null;
 
-// --- FUNCIONES GLOBALES (Solución a ReferenceError) ---
+// --- FUNCIONES GLOBALES ---
 
 window.openTab = function(name) {
     document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
@@ -34,7 +33,7 @@ window.confirmarVenta = async function() {
     const ban = parseFloat(document.getElementById('cantBanco').value) || 0;
     
     if (Math.abs((efe + ban) - ramoSeleccionado) > 0.01) {
-        alert(`Error: La suma debe ser exactamente $${ramoSeleccionado}`);
+        alert(`La suma debe ser $${ramoSeleccionado}`);
         return;
     }
 
@@ -51,23 +50,35 @@ window.cancelarVenta = function() {
     document.querySelectorAll('.ramo-item').forEach(i => i.classList.remove('selected'));
 };
 
-window.registrarGastoRapido = async function() {
-    const desc = document.getElementById('descGasto').value;
-    const monto = parseFloat(document.getElementById('montoGasto').value);
-    const cuenta = document.getElementById('cuentaGasto').value;
+window.registrarSalida = async function(tipo) {
+    const idDesc = tipo === 'INVERSIÓN' ? 'descInversion' : 'descGasto';
+    const idMonto = tipo === 'INVERSIÓN' ? 'montoInversion' : 'montoGasto';
+    const idCuenta = tipo === 'INVERSIÓN' ? 'cuentaInversion' : 'cuentaGasto';
 
-    if(!desc || !monto) return;
+    const desc = document.getElementById(idDesc).value;
+    const monto = parseFloat(document.getElementById(idMonto).value);
+    const cuenta = document.getElementById(idCuenta).value;
+
+    if (!desc || isNaN(monto)) {
+        alert("Por favor completa los datos");
+        return;
+    }
 
     db.cuentas[cuenta] -= monto;
-    addHist('GASTO', desc, monto, cuenta);
+    addHist(tipo, desc, monto, cuenta);
+    
+    // Limpiar campos
+    document.getElementById(idDesc).value = "";
+    document.getElementById(idMonto).value = "";
+    
     await save();
-    alert("Gasto registrado");
+    alert(tipo + " registrado correctamente");
 };
 
-// --- LÓGICA DE DATOS ---
+// --- PERSISTENCIA Y RENDER ---
 
 async function cargarDatos() {
-    let { data } = await _supabase.from('datos_floreria').select('contenido').eq('id', 1).single();
+    const { data } = await _supabase.from('datos_floreria').select('contenido').eq('id', 1).single();
     if (data) {
         db = data.contenido;
         render();
@@ -84,30 +95,20 @@ function addHist(tipo, desc, monto, cuenta) {
 }
 
 function render() {
-    // Balances
     document.getElementById('balEfectivo').innerText = `$${db.cuentas.efectivo.toFixed(2)}`;
     document.getElementById('balBanco').innerText = `$${db.cuentas.banco.toFixed(2)}`;
 
-    // Ramos
     const grid = document.getElementById('gridRamos');
     grid.innerHTML = db.ramosPrecios.map(p => 
         `<div class="ramo-item" onclick="window.seleccionarRamo(${p}, this)">$${p}</div>`
     ).join('');
 
-    // Inventario
-    const lista = document.getElementById('listaInventario');
-    lista.innerHTML = Object.keys(db.inventario).map(k => 
-        `<tr><td>${k}</td><td>${db.inventario[k]}</td><td><button onclick="eliminar('${k}')">X</button></td></tr>`
-    ).join('');
-
-    // Historial
     const histDiv = document.getElementById('listaHistorial');
-    histDiv.innerHTML = db.historial.slice(0,10).map(h => 
-        `<div style="border-bottom:1px solid #eee; padding:5px;">
-            ${h.f} - <b>${h.tipo}</b>: ${h.desc} ($${h.monto})
+    histDiv.innerHTML = db.historial.slice(0, 15).map(h => 
+        `<div style="margin-bottom:5px; border-bottom:1px solid #eee">
+            ${h.f.split(',')[0]} - <b>${h.tipo}</b>: ${h.desc} ($${h.monto}) [${h.cuenta}]
         </div>`
     ).join('');
 }
 
-// Iniciar
 cargarDatos();
