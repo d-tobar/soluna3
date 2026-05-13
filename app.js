@@ -1,7 +1,7 @@
 // 1. CONFIGURACIÓN DE SUPABASE
 // Reemplaza estos valores con los que te da Supabase en Settings > API
 const SUPABASE_URL = 'https://wymfzcomfmmuobmqtkzc.supabase.co/rest/v1/';
-const SUPABASE_KEY = 'TU_KEY_ANON_PUBLICA';
+const SUPABASE_KEY = 'sb_publishable_fmsMMmMpRjw2uA7vEjblIQ_CQbjvc0O';
 const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // Objeto global de datos (se llenará con lo que traiga la nube)
